@@ -107,8 +107,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; backgroun
 .drop strong { display: block; font-size: var(--text-lg); }
 .drop span { display: block; color: var(--color-muted); font-size: var(--text-sm); }
 .safe {
-  margin: var(--space-sm) 0 0; text-align: center; text-wrap: balance; word-break: keep-all;
-  color: var(--color-accent); font-size: var(--text-sm); font-weight: 700;
+  margin: var(--space-md) 0 0; text-align: center; text-wrap: balance; word-break: keep-all;
+  color: var(--color-accent); font-size: 1.0625rem; font-weight: 700;
 }
 .safe svg { width: 1em; height: 1em; margin-right: var(--space-xs); vertical-align: -0.12em; }
 body.has-sheets .drop span, body.has-sheets .safe { display: none; }
@@ -188,6 +188,9 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
   line-height: 1.45;
 }
 
+@media (min-width: 720px) {
+  .safe { font-size: var(--text-lg); }
+}
 @media (max-width: 480px) {
   .bar h1 { flex-basis: 100%; }
   .actions { width: 100%; }
