@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>전자세금계산서 XML 보기</title>
+<title>전자세금계산서 XML 보기 · 인쇄 · PDF 변환</title>
 <meta name="description" content="전자세금계산서·전자계산서 XML 파일을 홈택스 인쇄본 서식으로 보고 인쇄·PDF·HTML로 저장하는 무료 도구. 파일은 브라우저 안에서만 처리합니다.">
 <link rel="canonical" href="https://taxinvoice.yuujin.kim/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="전자세금계산서 XML 보기">
+<meta property="og:title" content="전자세금계산서 XML 보기 · 인쇄 · PDF 변환">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"전자세금계산서 XML 보기","url":"https://taxinvoice.yuujin.kim/","applicationCategory":"BusinessApplication","operatingSystem":"Any","inLanguage":"ko","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"description":"전자세금계산서·전자계산서 XML을 홈택스 서식으로 열람하고 인쇄·PDF·HTML로 저장"}</script>
 <meta property="og:description" content="세금계산서 XML을 홈택스 서식으로 열람·인쇄·PDF 저장. 설치·가입 없이 브라우저에서만 처리합니다.">
 <meta property="og:url" content="https://taxinvoice.yuujin.kim/">
 <meta name="theme-color" content="#2f4f86">
@@ -104,9 +105,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; backgroun
   cursor: pointer;
 }
 .drop strong { display: block; font-size: var(--text-lg); }
-.drop span { color: var(--color-muted); font-size: var(--text-sm); }
+.drop span { display: block; color: var(--color-muted); font-size: var(--text-xs); }
+body.has-sheets .drop span { display: none; }
 body.dragging .drop { border-color: var(--color-accent); background: var(--color-hover); }
-.privacy { margin: var(--space-sm) 0 0; color: var(--color-muted); font-size: var(--text-xs); }
 .demo { margin-top: var(--space-sm); min-height: 36px; font-size: var(--text-xs); }
 body.has-sheets .demo { display: none; }
 .site-foot { padding: 0 var(--space-md) var(--space-lg); text-align: center; color: var(--color-muted); font-size: var(--text-xs); }
@@ -125,7 +126,7 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
   font-size: var(--text-xs); color: var(--color-muted);
 }
 .caption .name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-.caption button { min-height: 32px; font-size: var(--text-xs); padding: 0 var(--space-sm); }
+.caption button { min-height: 32px; min-width: 32px; font-size: var(--text-md); padding: 0; }
 .warn {
   margin: 0 0 var(--space-xs); padding: var(--space-xs) var(--space-sm);
   background: var(--color-warn-bg); color: var(--color-warn);
@@ -212,15 +213,14 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
 
 <section class="intro">
   <label class="drop" for="pick">
-    <strong>XML 파일을 끌어다 놓으세요</strong>
-    <span>또는 눌러서 선택 · 여러 파일을 한 번에 열 수 있습니다</span>
+    <strong>XML 파일 놓기 · 선택</strong>
+    <span>서버 전송 없음</span>
   </label>
-  <p class="privacy">파일은 이 브라우저 안에서만 읽으며 어디로도 전송하지 않습니다. PDF는 인쇄 창에서 ‘PDF로 저장’을 고르세요.</p>
-  <button id="demo" class="demo" type="button">예시 계산서로 보기</button>
+  <button id="demo" class="demo" type="button">예시 보기</button>
 </section>
 <div class="errors" id="errors"></div>
 <main class="sheets" id="sheets"></main>
-<footer class="site-foot">무료 · 광고 없음 · <a href="https://github.com/kimyuujin/tax-invoice-viewer" rel="noopener">소스 코드와 문의(GitHub)</a></footer>
+<footer class="site-foot"><a href="https://github.com/kimyuujin/tax-invoice-viewer" rel="noopener">GitHub</a></footer>
 
 <script>
 'use strict';
@@ -285,9 +285,9 @@ function party(el) {
 
 function parseInvoice(xmlText) {
   const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
-  if (doc.getElementsByTagName('parsererror').length) throw new Error('XML 형식이 올바르지 않습니다');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('XML 형식 오류');
   const root = doc.documentElement;
-  if (root.localName !== 'TaxInvoice') throw new Error('전자(세금)계산서 표준 XML(TaxInvoice)이 아닙니다');
+  if (root.localName !== 'TaxInvoice') throw new Error('세금계산서 XML 아님');
   const d = at(root, 'TaxInvoiceDocument');
   const s = at(root, 'TaxInvoiceTradeSettlement');
   const sum = at(s, 'SpecifiedMonetarySummation');
@@ -367,13 +367,14 @@ function checks(inv, taxFree) {
   const out = [];
   if (inv.lines.length) {
     const lineAmt = inv.lines.reduce((a, l) => a + n(l.amount), 0);
-    if (lineAmt !== n(inv.charge)) out.push(`품목 공급가액 합계(${money(lineAmt / 100)})가 공급가액(${money(inv.charge)})과 다릅니다`);
+    if (lineAmt !== n(inv.charge)) out.push(`품목 공급가액 합 ${money(lineAmt / 100)} ≠ 공급가액 ${money(inv.charge)}`);
     const lineTax = inv.lines.reduce((a, l) => a + n(l.tax), 0);
-    if (!taxFree && lineTax !== n(inv.tax)) out.push(`품목 세액 합계(${money(lineTax / 100)})가 세액(${money(inv.tax)})과 다릅니다`);
+    if (!taxFree && lineTax !== n(inv.tax)) out.push(`품목 세액 합 ${money(lineTax / 100)} ≠ 세액 ${money(inv.tax)}`);
   }
-  if (inv.total && n(inv.charge) + n(inv.tax) !== n(inv.total)) out.push(`공급가액+세액이 합계금액(${money(inv.total)})과 다릅니다`);
+  if (inv.total && n(inv.charge) + n(inv.tax) !== n(inv.total)) out.push(`공급가액 + 세액 ${money((n(inv.charge) + n(inv.tax)) / 100)} ≠ 합계금액 ${money(inv.total)}`);
   const paid = Object.values(inv.pay).filter(Boolean);
-  if (paid.length && paid.reduce((a, v) => a + n(v), 0) !== n(inv.total)) out.push('결제수단 금액 합계가 합계금액과 다릅니다');
+  const paidSum = paid.reduce((a, v) => a + n(v), 0);
+  if (paid.length && paidSum !== n(inv.total)) out.push(`결제 금액 합 ${money(paidSum / 100)} ≠ 합계금액 ${money(inv.total)}`);
   return out;
 }
 
@@ -488,7 +489,7 @@ function renderSheet(inv) {
         <td rowspan="2" class="claim">이 금액을 (<b>${esc(purpose || '')}</b>) 함</td></tr>
       <tr><td class="num">${money(inv.total)}</td><td class="num">${money(inv.pay.cash)}</td><td class="num">${money(inv.pay.check)}</td><td class="num">${money(inv.pay.note)}</td><td class="num">${money(inv.pay.credit)}</td></tr>
     </table>
-    <div class="foot">전자(세금)계산서 XML 파일에서 변환한 열람용 사본입니다. 발급 사실은 국세청 홈택스(www.hometax.go.kr)의 「조회/발급 › 전자세금계산서 › 제3자 발급사실 조회」에서 확인할 수 있습니다.</div>
+    <div class="foot">XML 변환 열람용 사본 · 발급 확인: 홈택스 제3자 발급사실 조회</div>
   </article>`;
 }
 
@@ -558,8 +559,8 @@ function addEntry(fileName, inv) {
   const entry = document.createElement('section');
   entry.className = 'entry';
   entry.innerHTML = `
-    <div class="caption"><span class="name">${esc(fileName)}</span><button type="button">닫기</button></div>
-    ${warns.map(w => `<p class="warn">검산: ${esc(w)}</p>`).join('')}
+    <div class="caption"><span class="name">${esc(fileName)}</span><button type="button" aria-label="닫기" title="닫기">×</button></div>
+    ${warns.map(w => `<p class="warn">${esc(w)}</p>`).join('')}
     <div class="fit">${renderSheet(inv)}</div>`;
   const item = { fileName, inv, entry };
   entry.querySelector('.caption button').addEventListener('click', () => {
@@ -623,7 +624,7 @@ document.getElementById('pick').addEventListener('change', e => {
 printBtn.addEventListener('click', () => window.print());
 document.getElementById('demo').addEventListener('click', () => {
   errorsEl.innerHTML = '';
-  addEntry('예시.xml (가상 데이터)', parseInvoice(SAMPLE_XML));
+  addEntry('예시 (가상 데이터)', parseInvoice(SAMPLE_XML));
   refresh();
 });
 saveBtn.addEventListener('click', saveHtml);
