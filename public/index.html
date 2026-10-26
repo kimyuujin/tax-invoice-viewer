@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전자세금계산서 XML 보기</title>
+<meta name="description" content="전자세금계산서·전자계산서 XML 파일을 홈택스 인쇄본 서식으로 보고 인쇄·PDF·HTML로 저장하는 무료 도구. 파일은 브라우저 안에서만 처리합니다.">
+<link rel="canonical" href="https://taxinvoice.yuujin.kim/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="전자세금계산서 XML 보기">
+<meta property="og:description" content="세금계산서 XML을 홈택스 서식으로 열람·인쇄·PDF 저장. 설치·가입 없이 브라우저에서만 처리합니다.">
+<meta property="og:url" content="https://taxinvoice.yuujin.kim/">
+<meta name="theme-color" content="#2f4f86">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='3' width='22' height='26' rx='2' fill='%23fff' stroke='%232f4f86' stroke-width='2'/%3E%3Cpath d='M10 10h12M10 15h12M10 20h7' stroke='%232f4f86' stroke-width='2'/%3E%3C/svg%3E">
+<style id="app-style">
+/* Hallmark · pre-emit critique: P4 H4 E4 S5 R5 V3
+ * 도구 화면은 절제, 서식은 홈택스 인쇄본 배치를 따른다. 모든 색·글꼴은 토큰. */
+:root {
+  color-scheme: light;
+  --color-paper: oklch(96.5% 0.005 255);
+  --color-surface: oklch(100% 0 0);
+  --color-ink: oklch(24% 0.02 255);
+  --color-muted: oklch(48% 0.02 255);
+  --color-rule: oklch(86% 0.012 255);
+  --color-accent: oklch(42% 0.09 255);
+  --color-accent-ink: oklch(99% 0 0);
+  --color-hover: oklch(92% 0.02 255);
+  --color-warn: oklch(52% 0.13 60);
+  --color-warn-bg: oklch(96% 0.04 85);
+  --color-error: oklch(50% 0.17 25);
+  --form-frame: oklch(38% 0.07 255);
+  --form-line: oklch(78% 0.02 255);
+  --form-label-bg: oklch(95.5% 0.012 255);
+  --form-supplier: oklch(55% 0.19 25);
+  --form-supplier-bg: oklch(96% 0.025 20);
+  --form-buyer: oklch(50% 0.14 255);
+  --form-buyer-bg: oklch(95.5% 0.025 250);
+  --form-broker: oklch(45% 0.03 255);
+  --form-broker-bg: oklch(95% 0.008 255);
+  --font-body: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --radius: 6px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: clip; }
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+button, .button {
+  font: inherit;
+  font-size: var(--text-sm);
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+button:hover, .button:hover { background: var(--color-hover); }
+button:focus-visible, .button:focus-within { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; background: var(--color-surface); }
+.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.primary:hover { background: var(--color-accent); filter: brightness(1.12); }
+.primary:disabled { background: var(--color-accent); }
+
+.bar {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-rule);
+}
+.bar h1 { margin: 0; font-size: var(--text-md); font-weight: 700; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.button input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.button { position: relative; }
+
+.intro { max-width: 760px; margin: 0 auto; padding: var(--space-lg) var(--space-md) 0; }
+.drop {
+  display: block;
+  border: 2px dashed var(--color-rule);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+  cursor: pointer;
+}
+.drop strong { display: block; font-size: var(--text-lg); }
+.drop span { color: var(--color-muted); font-size: var(--text-sm); }
+body.dragging .drop { border-color: var(--color-accent); background: var(--color-hover); }
+.privacy { margin: var(--space-sm) 0 0; color: var(--color-muted); font-size: var(--text-xs); }
+.demo { margin-top: var(--space-sm); min-height: 36px; font-size: var(--text-xs); }
+body.has-sheets .demo { display: none; }
+.site-foot { padding: 0 var(--space-md) var(--space-lg); text-align: center; color: var(--color-muted); font-size: var(--text-xs); }
+.site-foot a { color: var(--color-accent); }
+body.has-sheets .drop { padding: var(--space-sm) var(--space-md); }
+body.has-sheets .drop strong { font-size: var(--text-md); }
+
+.errors { max-width: 760px; margin: var(--space-md) auto 0; padding: 0 var(--space-md); }
+.errors p { margin: 0 0 var(--space-xs); color: var(--color-error); font-size: var(--text-sm); }
+
+.sheets { padding: var(--space-md) var(--space-md) var(--space-lg); display: grid; gap: var(--space-lg); justify-items: center; }
+.entry { width: 100%; max-width: 700px; min-width: 0; }
+.caption {
+  display: flex; align-items: center; gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+  font-size: var(--text-xs); color: var(--color-muted);
+}
+.caption .name { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.caption button { min-height: 32px; font-size: var(--text-xs); padding: 0 var(--space-sm); }
+.warn {
+  margin: 0 0 var(--space-xs); padding: var(--space-xs) var(--space-sm);
+  background: var(--color-warn-bg); color: var(--color-warn);
+  border-radius: var(--radius); font-size: var(--text-xs);
+}
+.fit { width: 100%; overflow: hidden; }
+
+/* ---- 서식 ---- */
+.sheet {
+  width: 680px;
+  zoom: var(--fit, 1);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 2px solid var(--form-frame);
+  font-size: 12.5px;
+  line-height: 1.35;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.sheet table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.sheet table + table { border-top: 2px solid var(--form-frame); }
+.sheet td, .sheet th {
+  border: 1px solid var(--form-line);
+  padding: 3px 5px;
+  height: 26px;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+  font-weight: 400;
+}
+.sheet tr > :first-child { border-left: 0; }
+.sheet tr > :last-child { border-right: 0; }
+.sheet tr:first-child > * { border-top: 0; }
+.sheet tr:last-child > * { border-bottom: 0; }
+.sheet th { background: var(--form-label-bg); text-align: center; font-weight: 700; color: var(--color-ink); }
+.sheet .title { font-size: 20px; font-weight: 700; text-align: center; letter-spacing: 0.04em; height: 40px; background: var(--form-label-bg); }
+.sheet .title small { display: block; font-size: 11px; font-weight: 400; letter-spacing: 0; color: var(--color-muted); }
+.sheet .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sheet .ctr { text-align: center; }
+.sheet .big { font-size: 14px; white-space: nowrap; }
+.sheet th.tight { font-size: 10.5px; letter-spacing: -0.03em; }
+.sheet .side { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.15em; font-weight: 700; padding: 4px 0; }
+.sheet th.s { color: var(--form-supplier); background: var(--form-supplier-bg); }
+.sheet th.b { color: var(--form-buyer); background: var(--form-buyer-bg); }
+.sheet th.k { color: var(--form-broker); background: var(--form-broker-bg); }
+.sheet .split { border-left: 2px solid var(--form-frame); }
+.sheet .claim { text-align: center; font-size: 13px; }
+.sheet .claim b { padding: 0 0.6em; }
+.sheet .multiline { white-space: pre-line; }
+.foot {
+  border-top: 2px solid var(--form-frame);
+  padding: 5px 8px;
+  font-size: 10.5px;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+@media (max-width: 480px) {
+  .bar h1 { flex-basis: 100%; }
+  .actions { width: 100%; }
+  .actions > * { flex: 1 1 0; padding: 0 var(--space-sm); }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  body { background: var(--color-surface); }
+  .bar, .intro, .errors, .caption, .warn, .site-foot { display: none !important; }
+  .sheets { display: block; padding: 0; }
+  .entry { max-width: none; break-after: page; }
+  .entry:last-child { break-after: auto; }
+  .fit { overflow: visible; }
+  .sheet { zoom: 1; margin: 0 auto; break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>전자세금계산서 XML 보기</h1>
+  <div class="actions">
+    <label class="button">XML 열기<input id="pick" type="file" accept=".xml,text/xml,application/xml" multiple></label>
+    <button id="print" class="primary" type="button" disabled>인쇄 · PDF</button>
+    <button id="save" type="button" disabled>HTML 저장</button>
+  </div>
+</header>
+
+<section class="intro">
+  <label class="drop" for="pick">
+    <strong>XML 파일을 끌어다 놓으세요</strong>
+    <span>또는 눌러서 선택 · 여러 파일을 한 번에 열 수 있습니다</span>
+  </label>
+  <p class="privacy">파일은 이 브라우저 안에서만 읽으며 어디로도 전송하지 않습니다. PDF는 인쇄 창에서 ‘PDF로 저장’을 고르세요.</p>
+  <button id="demo" class="demo" type="button">예시 계산서로 보기</button>
+</section>
+<div class="errors" id="errors"></div>
+<main class="sheets" id="sheets"></main>
+<footer class="site-foot">무료 · 광고 없음 · <a href="https://github.com/kimyuujin/tax-invoice-viewer" rel="noopener">소스 코드와 문의(GitHub)</a></footer>
+
+<script>
+'use strict';
+
+const DOC_KIND = { '01': '세금계산서', '02': '수정세금계산서', '03': '계산서', '04': '수정계산서' };
+const DOC_DETAIL = { '01': '', '02': '영세율', '03': '위수탁', '04': '수입', '05': '영세율 위수탁', '06': '수입 납부유예' };
+const AMEND_REASON = {
+  1: '기재사항 착오·정정', 2: '공급가액 변동', 3: '환입',
+  4: '계약의 해제', 5: '내국신용장 사후개설', 6: '착오에 의한 이중발급'
+};
+const PAY_MEANS = { '10': 'cash', '20': 'check', '30': 'note', '40': 'credit' };
+const PURPOSE = { '01': '영수', '02': '청구' };
+
+// ---- XML 읽기 (네임스페이스 접두사와 무관하게 localName으로 찾는다) ----
+function kids(el, name) {
+  return el ? [...el.children].filter(c => c.localName === name) : [];
+}
+function at(el, path) {
+  for (const step of path.split('/')) {
+    if (!el) return null;
+    el = kids(el, step)[0] || null;
+  }
+  return el;
+}
+function txt(el, path) {
+  const node = path ? at(el, path) : el;
+  return node ? node.textContent.trim() : '';
+}
+
+function decode(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes[0] === 0xFF && bytes[1] === 0xFE) return new TextDecoder('utf-16le').decode(bytes);
+  if (bytes[0] === 0xFE && bytes[1] === 0xFF) return new TextDecoder('utf-16be').decode(bytes);
+  const head = new TextDecoder('latin1').decode(bytes.subarray(0, 200));
+  const label = (head.match(/encoding\s*=\s*["']([^"']+)["']/i) || [])[1] || 'utf-8';
+  try {
+    return new TextDecoder(label).decode(bytes);
+  } catch (e) {
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+}
+
+function party(el) {
+  if (!el) return null;
+  const org = at(el, 'SpecifiedOrganization');
+  const emails = [];
+  for (const contact of ['DefinedContact', 'PrimaryDefinedContact', 'SecondaryDefinedContact']) {
+    for (const c of kids(el, contact)) emails.push(txt(c, 'URICommunication'));
+  }
+  return {
+    id: txt(el, 'ID'),
+    idType: txt(org, 'BusinessTypeCode') || '01',
+    branch: txt(org, 'TaxRegistrationID') || txt(el, 'TaxRegistrationID'),
+    name: txt(el, 'NameText'),
+    ceo: txt(el, 'SpecifiedPerson/NameText'),
+    address: txt(el, 'SpecifiedAddress/LineOneText'),
+    bizType: txt(el, 'TypeCode'),
+    bizItem: txt(el, 'ClassificationCode'),
+    emails
+  };
+}
+
+function parseInvoice(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('XML 형식이 올바르지 않습니다');
+  const root = doc.documentElement;
+  if (root.localName !== 'TaxInvoice') throw new Error('전자(세금)계산서 표준 XML(TaxInvoice)이 아닙니다');
+  const d = at(root, 'TaxInvoiceDocument');
+  const s = at(root, 'TaxInvoiceTradeSettlement');
+  const sum = at(s, 'SpecifiedMonetarySummation');
+  const pay = { cash: '', check: '', note: '', credit: '' };
+  for (const m of kids(s, 'SpecifiedPaymentMeans')) {
+    const key = PAY_MEANS[txt(m, 'TypeCode')];
+    if (key) pay[key] = txt(m, 'PaidAmount');
+  }
+  const lines = kids(root, 'TaxInvoiceTradeLineItem').map(li => ({
+    seq: txt(li, 'SequenceNumeric'),
+    date: txt(li, 'PurchaseExpiryDateTime'),
+    name: txt(li, 'NameText'),
+    spec: txt(li, 'InformationText'),
+    qty: txt(li, 'ChargeableUnitQuantity'),
+    unit: txt(li, 'UnitPrice/UnitAmount'),
+    amount: txt(li, 'InvoiceAmount'),
+    tax: txt(li, 'TotalTax/CalculatedAmount'),
+    note: txt(li, 'DescriptionText')
+  })).sort((a, b) => (Number(a.seq) || 0) - (Number(b.seq) || 0));
+  return {
+    issueId: txt(d, 'IssueID'),
+    typeCode: txt(d, 'TypeCode'),
+    issueDate: txt(d, 'IssueDateTime'),
+    purpose: txt(d, 'PurposeCode'),
+    amendCode: txt(d, 'AmendmentStatusCode'),
+    originalId: txt(d, 'OriginalIssueID'),
+    notes: kids(d, 'DescriptionText').map(n => n.textContent.trim()).filter(Boolean),
+    supplier: party(at(s, 'InvoicerParty')),
+    buyer: party(at(s, 'InvoiceeParty')),
+    broker: party(at(s, 'BrokerParty')),
+    charge: txt(sum, 'ChargeTotalAmount'),
+    tax: txt(sum, 'TaxTotalAmount'),
+    total: txt(sum, 'GrandTotalAmount'),
+    pay,
+    lines
+  };
+}
+
+// ---- 표기 ----
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function money(v) {
+  if (v === '' || v == null) return '';
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toLocaleString('ko-KR', { maximumFractionDigits: 6 }) : v;
+}
+function ymd(v) {
+  return /^\d{8}/.test(v) ? `${v.slice(0, 4)}/${v.slice(4, 6)}/${v.slice(6, 8)}` : v;
+}
+function approval(v) {
+  return /^\d{24}$/.test(v) ? `${v.slice(0, 8)}-${v.slice(8, 16)}-${v.slice(16)}` : v;
+}
+function regNo(p) {
+  const id = p.id.replace(/\D/g, '');
+  if (p.idType === '02' && id.length === 13) return `${id.slice(0, 6)}-*******`;
+  if (id.length === 10) return `${id.slice(0, 3)}-${id.slice(3, 5)}-${id.slice(5)}`;
+  return p.id;
+}
+function kindOf(inv) {
+  const major = inv.typeCode.slice(0, 2);
+  const detail = DOC_DETAIL[inv.typeCode.slice(2, 4)] || '';
+  return {
+    title: (DOC_KIND[major] || '세금계산서').replace(/^(수정)?/, '$1전자'),
+    detail,
+    taxFree: major === '03' || major === '04'
+  };
+}
+function amendText(code) {
+  if (!code) return '';
+  return AMEND_REASON[parseInt(code, 10)] || code;
+}
+
+// 금액 검산: 품목 합계·합계금액·결제수단 합계를 비교해 어긋난 항목만 돌려준다.
+function checks(inv, taxFree) {
+  const n = v => Math.round(Number(v || 0) * 100);
+  const out = [];
+  if (inv.lines.length) {
+    const lineAmt = inv.lines.reduce((a, l) => a + n(l.amount), 0);
+    if (lineAmt !== n(inv.charge)) out.push(`품목 공급가액 합계(${money(lineAmt / 100)})가 공급가액(${money(inv.charge)})과 다릅니다`);
+    const lineTax = inv.lines.reduce((a, l) => a + n(l.tax), 0);
+    if (!taxFree && lineTax !== n(inv.tax)) out.push(`품목 세액 합계(${money(lineTax / 100)})가 세액(${money(inv.tax)})과 다릅니다`);
+  }
+  if (inv.total && n(inv.charge) + n(inv.tax) !== n(inv.total)) out.push(`공급가액+세액이 합계금액(${money(inv.total)})과 다릅니다`);
+  const paid = Object.values(inv.pay).filter(Boolean);
+  if (paid.length && paid.reduce((a, v) => a + n(v), 0) !== n(inv.total)) out.push('결제수단 금액 합계가 합계금액과 다릅니다');
+  return out;
+}
+
+// ---- 서식 그리기 ----
+function partyRows(sup, buy) {
+  const cell = (v, cls = '') => `<td class="${cls}">${esc(v)}</td>`;
+  const sEmails = sup.emails.filter(Boolean);
+  const bEmails = buy.emails.filter(Boolean);
+  return `
+  <tr>
+    <th class="side s" rowspan="6">공급자</th>
+    <th class="s">등록<br>번호</th>${cell(regNo(sup), 'ctr big')}
+    <th class="s tight">종사업장<br>번호</th>${cell(sup.branch, 'ctr')}
+    <th class="side b split" rowspan="6">공급받는자</th>
+    <th class="b">등록<br>번호</th>${cell(regNo(buy), 'ctr big')}
+    <th class="b tight">종사업장<br>번호</th>${cell(buy.branch, 'ctr')}
+  </tr>
+  <tr>
+    <th class="s">상호<br>(법인명)</th>${cell(sup.name)}
+    <th class="s">성명</th>${cell(sup.ceo)}
+    <th class="b">상호<br>(법인명)</th>${cell(buy.name)}
+    <th class="b">성명</th>${cell(buy.ceo)}
+  </tr>
+  <tr>
+    <th class="s">사업장</th><td colspan="3">${esc(sup.address)}</td>
+    <th class="b">사업장</th><td colspan="3">${esc(buy.address)}</td>
+  </tr>
+  <tr>
+    <th class="s">업태</th>${cell(sup.bizType)}
+    <th class="s">종목</th>${cell(sup.bizItem)}
+    <th class="b">업태</th>${cell(buy.bizType)}
+    <th class="b">종목</th>${cell(buy.bizItem)}
+  </tr>
+  <tr>
+    <th class="s" rowspan="2">이메일</th>
+    <td colspan="3" rowspan="2">${esc(sEmails.join('\n')).replace(/\n/g, '<br>')}</td>
+    <th class="b">이메일</th><td colspan="3">${esc(bEmails[0] || '')}</td>
+  </tr>
+  <tr>
+    <th class="b">이메일</th><td colspan="3">${esc(bEmails[1] || '')}</td>
+  </tr>`;
+}
+
+function brokerTable(b) {
+  if (!b || !(b.id || b.name)) return '';
+  const th = label => `<th class="k">${label}</th>`;
+  return `
+  <table>
+    <colgroup><col style="width:9%"><col style="width:16%"><col style="width:9%"><col style="width:16%"><col style="width:9%"><col style="width:16%"><col style="width:9%"><col style="width:16%"></colgroup>
+    <tr>${th('수탁자<br>등록번호')}<td class="ctr">${esc(regNo(b))}</td>${th('상호')}<td>${esc(b.name)}</td>${th('성명')}<td>${esc(b.ceo)}</td>${th('이메일')}<td>${esc(b.emails.filter(Boolean)[0] || '')}</td></tr>
+    <tr>${th('사업장')}<td colspan="3">${esc(b.address)}</td>${th('업태')}<td>${esc(b.bizType)}</td>${th('종목')}<td>${esc(b.bizItem)}</td></tr>
+  </table>`;
+}
+
+function renderSheet(inv) {
+  const kind = kindOf(inv);
+  const notes = [...inv.notes];
+  if (inv.originalId) notes.push(`당초 승인번호 ${approval(inv.originalId)}`);
+  const minRows = 4;
+  const rows = inv.lines.map(l => `
+    <tr>
+      <td class="ctr">${esc(l.date.slice(4, 6))}</td><td class="ctr">${esc(l.date.slice(6, 8))}</td>
+      <td>${esc(l.name)}</td><td>${esc(l.spec)}</td>
+      <td class="num">${money(l.qty)}</td><td class="num">${money(l.unit)}</td>
+      <td class="num">${money(l.amount)}</td>${kind.taxFree ? '' : `<td class="num">${money(l.tax)}</td>`}
+      <td>${esc(l.note)}</td>
+    </tr>`);
+  for (let i = inv.lines.length; i < minRows; i++) {
+    rows.push(`<tr>${'<td></td>'.repeat(kind.taxFree ? 8 : 9)}</tr>`);
+  }
+  const itemCols = kind.taxFree
+    ? [5, 5, 26, 11, 8, 12, 19, 14]
+    : [5, 5, 22, 10, 8, 11, 15, 12, 12];
+  const purpose = PURPOSE[inv.purpose];
+
+  return `
+  <article class="sheet">
+    <table>
+      <colgroup><col style="width:52%"><col style="width:14%"><col style="width:34%"></colgroup>
+      <tr>
+        <td class="title">${esc(kind.title)}${kind.detail ? `<small>(${esc(kind.detail)})</small>` : ''}</td>
+        <th>승인번호</th><td class="ctr">${esc(approval(inv.issueId))}</td>
+      </tr>
+    </table>
+    <table>
+      <colgroup>
+        <col style="width:4%"><col style="width:8.5%"><col style="width:19%"><col style="width:8.5%"><col style="width:10%">
+        <col style="width:4%"><col style="width:8.5%"><col style="width:19%"><col style="width:8.5%"><col style="width:10%">
+      </colgroup>
+      ${partyRows(inv.supplier, inv.buyer)}
+    </table>
+    ${brokerTable(inv.broker)}
+    <table>
+      ${kind.taxFree
+        ? `<colgroup><col style="width:22%"><col style="width:30%"><col style="width:48%"></colgroup>
+           <tr><th>작성일자</th><th>공급가액</th><th>수정사유</th></tr>
+           <tr><td class="ctr">${esc(ymd(inv.issueDate))}</td><td class="num">${money(inv.charge)}</td><td class="ctr">${esc(amendText(inv.amendCode))}</td></tr>
+           <tr><th>비고</th><td colspan="2" class="multiline">${esc(notes.join('\n'))}</td></tr>`
+        : `<colgroup><col style="width:18%"><col style="width:23%"><col style="width:23%"><col style="width:36%"></colgroup>
+           <tr><th>작성일자</th><th>공급가액</th><th>세액</th><th>수정사유</th></tr>
+           <tr><td class="ctr">${esc(ymd(inv.issueDate))}</td><td class="num">${money(inv.charge)}</td><td class="num">${money(inv.tax)}</td><td class="ctr">${esc(amendText(inv.amendCode))}</td></tr>
+           <tr><th>비고</th><td colspan="3" class="multiline">${esc(notes.join('\n'))}</td></tr>`}
+    </table>
+    <table>
+      <colgroup>${itemCols.map(w => `<col style="width:${w}%">`).join('')}</colgroup>
+      <tr><th>월</th><th>일</th><th>품목</th><th>규격</th><th>수량</th><th>단가</th><th>공급가액</th>${kind.taxFree ? '' : '<th>세액</th>'}<th>비고</th></tr>
+      ${rows.join('')}
+    </table>
+    <table>
+      <colgroup><col style="width:16%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:14%"><col style="width:34%"></colgroup>
+      <tr><th>합계금액</th><th>현금</th><th>수표</th><th>어음</th><th>외상미수금</th>
+        <td rowspan="2" class="claim">이 금액을 (<b>${esc(purpose || '')}</b>) 함</td></tr>
+      <tr><td class="num">${money(inv.total)}</td><td class="num">${money(inv.pay.cash)}</td><td class="num">${money(inv.pay.check)}</td><td class="num">${money(inv.pay.note)}</td><td class="num">${money(inv.pay.credit)}</td></tr>
+    </table>
+    <div class="foot">전자(세금)계산서 XML 파일에서 변환한 열람용 사본입니다. 발급 사실은 국세청 홈택스(www.hometax.go.kr)의 「조회/발급 › 전자세금계산서 › 제3자 발급사실 조회」에서 확인할 수 있습니다.</div>
+  </article>`;
+}
+
+// 예시 보기용 가상 계산서. 실제 사업자·거래와 무관하다.
+const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<TaxInvoice xmlns="urn:kr:or:kec:standard:Tax:ReusableAggregateBusinessInformationEntitySchemaModule:1:0">
+  <TaxInvoiceDocument>
+    <IssueID>202601150000000000000001</IssueID><TypeCode>0101</TypeCode>
+    <DescriptionText>예시 데이터입니다</DescriptionText>
+    <IssueDateTime>20260115</IssueDateTime><PurposeCode>02</PurposeCode>
+  </TaxInvoiceDocument>
+  <TaxInvoiceTradeSettlement>
+    <InvoicerParty>
+      <ID>1234567890</ID><TypeCode>도소매</TypeCode><NameText>예시상사(주)</NameText><ClassificationCode>사무용품</ClassificationCode>
+      <SpecifiedPerson><NameText>홍길동</NameText></SpecifiedPerson>
+      <DefinedContact><URICommunication>sales@example.com</URICommunication></DefinedContact>
+      <SpecifiedAddress><LineOneText>서울특별시 중구 예시로 1</LineOneText></SpecifiedAddress>
+    </InvoicerParty>
+    <InvoiceeParty>
+      <ID>9876543210</ID><TypeCode>서비스</TypeCode><NameText>샘플기획 주식회사</NameText><ClassificationCode>소프트웨어 개발</ClassificationCode>
+      <SpecifiedOrganization><BusinessTypeCode>01</BusinessTypeCode></SpecifiedOrganization>
+      <SpecifiedPerson><NameText>김예시</NameText></SpecifiedPerson>
+      <PrimaryDefinedContact><URICommunication>account@example.org</URICommunication></PrimaryDefinedContact>
+      <SpecifiedAddress><LineOneText>부산광역시 해운대구 샘플로 2</LineOneText></SpecifiedAddress>
+    </InvoiceeParty>
+    <SpecifiedPaymentMeans><TypeCode>40</TypeCode><PaidAmount>396000</PaidAmount></SpecifiedPaymentMeans>
+    <SpecifiedMonetarySummation><ChargeTotalAmount>360000</ChargeTotalAmount><TaxTotalAmount>36000</TaxTotalAmount><GrandTotalAmount>396000</GrandTotalAmount></SpecifiedMonetarySummation>
+  </TaxInvoiceTradeSettlement>
+  <TaxInvoiceTradeLineItem>
+    <SequenceNumeric>1</SequenceNumeric><InvoiceAmount>300000</InvoiceAmount><ChargeableUnitQuantity>10</ChargeableUnitQuantity>
+    <InformationText>A4 2500매</InformationText><NameText>복사용지</NameText><PurchaseExpiryDateTime>20260115</PurchaseExpiryDateTime>
+    <TotalTax><CalculatedAmount>30000</CalculatedAmount></TotalTax><UnitPrice><UnitAmount>30000</UnitAmount></UnitPrice>
+  </TaxInvoiceTradeLineItem>
+  <TaxInvoiceTradeLineItem>
+    <SequenceNumeric>2</SequenceNumeric><InvoiceAmount>60000</InvoiceAmount><ChargeableUnitQuantity>4</ChargeableUnitQuantity>
+    <InformationText>흑색</InformationText><NameText>토너</NameText><PurchaseExpiryDateTime>20260115</PurchaseExpiryDateTime>
+    <TotalTax><CalculatedAmount>6000</CalculatedAmount></TotalTax><UnitPrice><UnitAmount>15000</UnitAmount></UnitPrice>
+  </TaxInvoiceTradeLineItem>
+</TaxInvoice>`;
+
+// ---- 화면 상태 ----
+const sheetsEl = document.getElementById('sheets');
+const errorsEl = document.getElementById('errors');
+const printBtn = document.getElementById('print');
+const saveBtn = document.getElementById('save');
+const loaded = [];
+
+function refresh() {
+  const has = loaded.length > 0;
+  document.body.classList.toggle('has-sheets', has);
+  printBtn.disabled = !has;
+  saveBtn.disabled = !has;
+  fitAll();
+}
+
+function fitAll() {
+  for (const fit of sheetsEl.querySelectorAll('.fit')) {
+    const sheet = fit.firstElementChild;
+    const scale = Math.min(1, fit.clientWidth / 684);
+    sheet.style.setProperty('--fit', scale.toFixed(4));
+  }
+}
+
+function addEntry(fileName, inv) {
+  const kind = kindOf(inv);
+  const warns = checks(inv, kind.taxFree);
+  const entry = document.createElement('section');
+  entry.className = 'entry';
+  entry.innerHTML = `
+    <div class="caption"><span class="name">${esc(fileName)}</span><button type="button">닫기</button></div>
+    ${warns.map(w => `<p class="warn">검산: ${esc(w)}</p>`).join('')}
+    <div class="fit">${renderSheet(inv)}</div>`;
+  const item = { fileName, inv, entry };
+  entry.querySelector('.caption button').addEventListener('click', () => {
+    loaded.splice(loaded.indexOf(item), 1);
+    entry.remove();
+    refresh();
+  });
+  loaded.push(item);
+  sheetsEl.append(entry);
+}
+
+async function openFiles(files) {
+  errorsEl.innerHTML = '';
+  for (const file of files) {
+    try {
+      addEntry(file.name, parseInvoice(decode(await file.arrayBuffer())));
+    } catch (e) {
+      const p = document.createElement('p');
+      p.textContent = `${file.name}: ${e.message}`;
+      errorsEl.append(p);
+    }
+  }
+  refresh();
+}
+
+function baseName() {
+  if (loaded.length === 1) {
+    const inv = loaded[0].inv;
+    return `${kindOf(inv).title}_${approval(inv.issueId) || loaded[0].fileName.replace(/\.xml$/i, '')}`;
+  }
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  return `전자세금계산서_${loaded.length}건_${today}`;
+}
+
+function saveHtml() {
+  const css = document.getElementById('app-style').textContent;
+  const body = loaded.map(l => `<section class="entry"><div class="fit">${renderSheet(l.inv)}</div></section>`).join('\n');
+  const html = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(baseName())}</title><style>${css}
+.fit { overflow-x: auto; }</style></head>
+<body><main class="sheets">${body}</main></body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  a.download = `${baseName()}.html`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// 인쇄 창의 'PDF로 저장' 기본 파일명이 문서 제목을 따르므로 잠시 바꾼다.
+const appTitle = document.title;
+window.addEventListener('beforeprint', () => { if (loaded.length) document.title = baseName(); });
+window.addEventListener('afterprint', () => { document.title = appTitle; });
+
+document.getElementById('pick').addEventListener('change', e => {
+  openFiles([...e.target.files]);
+  e.target.value = '';
+});
+printBtn.addEventListener('click', () => window.print());
+document.getElementById('demo').addEventListener('click', () => {
+  errorsEl.innerHTML = '';
+  addEntry('예시.xml (가상 데이터)', parseInvoice(SAMPLE_XML));
+  refresh();
+});
+saveBtn.addEventListener('click', saveHtml);
+window.addEventListener('resize', fitAll);
+
+let dragDepth = 0;
+window.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => {
+  e.preventDefault();
+  dragDepth = 0;
+  document.body.classList.remove('dragging');
+  openFiles([...e.dataTransfer.files]);
+});
+</script>
+</body>
+</html>

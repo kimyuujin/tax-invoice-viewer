@@ -1,0 +1,13 @@
+{
+  "name": "tax-invoice-viewer",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node tests/smoke.cjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "wrangler": "4.138.0"
+  }
+}

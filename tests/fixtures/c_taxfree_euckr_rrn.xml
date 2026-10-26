@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="EUC-KR"?>
+<TaxInvoice xmlns="urn:kr:or:kec:standard:Tax:ReusableAggregateBusinessInformationEntitySchemaModule:1:0">
+  <TaxInvoiceDocument>
+    <IssueID>202601150000000000000001</IssueID><TypeCode>0301</TypeCode>
+    <DescriptionText>예시 데이터입니다</DescriptionText>
+    <IssueDateTime>20260115</IssueDateTime><PurposeCode>02</PurposeCode>
+  </TaxInvoiceDocument>
+  <TaxInvoiceTradeSettlement>
+    <InvoicerParty>
+      <ID>1234567890</ID><TypeCode>도소매</TypeCode><NameText>예시상사(주)</NameText><ClassificationCode>사무용품</ClassificationCode>
+      <SpecifiedPerson><NameText>홍길동</NameText></SpecifiedPerson>
+      <DefinedContact><URICommunication>sales@example.com</URICommunication></DefinedContact>
+      <SpecifiedAddress><LineOneText>서울특별시 중구 예시로 1</LineOneText></SpecifiedAddress>
+    </InvoicerParty>
+    <InvoiceeParty>
+      <ID>9001011234567</ID><TypeCode>서비스</TypeCode><NameText>샘플기획 주식회사</NameText><ClassificationCode>소프트웨어 개발</ClassificationCode>
+      <SpecifiedOrganization><BusinessTypeCode>02</BusinessTypeCode></SpecifiedOrganization>
+      <SpecifiedPerson><NameText>김예시</NameText></SpecifiedPerson>
+      <PrimaryDefinedContact><URICommunication>account@example.org</URICommunication></PrimaryDefinedContact>
+      <SpecifiedAddress><LineOneText>부산광역시 해운대구 샘플로 2</LineOneText></SpecifiedAddress>
+    </InvoiceeParty>
+    <SpecifiedPaymentMeans><TypeCode>40</TypeCode><PaidAmount>360000</PaidAmount></SpecifiedPaymentMeans>
+    <SpecifiedMonetarySummation><ChargeTotalAmount>360000</ChargeTotalAmount><TaxTotalAmount>0</TaxTotalAmount><GrandTotalAmount>360000</GrandTotalAmount></SpecifiedMonetarySummation>
+  </TaxInvoiceTradeSettlement>
+  <TaxInvoiceTradeLineItem>
+    <SequenceNumeric>1</SequenceNumeric><InvoiceAmount>300000</InvoiceAmount><ChargeableUnitQuantity>10</ChargeableUnitQuantity>
+    <InformationText>A4 2500매</InformationText><NameText>복사용지</NameText><PurchaseExpiryDateTime>20260115</PurchaseExpiryDateTime>
+    <UnitPrice><UnitAmount>30000</UnitAmount></UnitPrice>
+  </TaxInvoiceTradeLineItem>
+  <TaxInvoiceTradeLineItem>
+    <SequenceNumeric>2</SequenceNumeric><InvoiceAmount>60000</InvoiceAmount><ChargeableUnitQuantity>4</ChargeableUnitQuantity>
+    <InformationText>흑색</InformationText><NameText>토너</NameText><PurchaseExpiryDateTime>20260115</PurchaseExpiryDateTime>
+    <UnitPrice><UnitAmount>15000</UnitAmount></UnitPrice>
+  </TaxInvoiceTradeLineItem>
+</TaxInvoice>
