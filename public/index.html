@@ -124,7 +124,7 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
 .errors p { margin: 0 0 var(--space-xs); color: var(--color-error); font-size: var(--text-sm); }
 
 .sheets { padding: var(--space-md) var(--space-md) var(--space-lg); display: grid; gap: var(--space-lg); justify-items: center; }
-.entry { width: 100%; max-width: 700px; min-width: 0; }
+.entry { width: 100%; max-width: 940px; min-width: 0; }
 .caption {
   display: flex; align-items: center; gap: var(--space-sm);
   margin-bottom: var(--space-xs);
@@ -172,7 +172,7 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
 .sheet .ctr { text-align: center; }
 .sheet .big { font-size: 14px; white-space: nowrap; }
 .sheet th.tight { font-size: 10.5px; letter-spacing: -0.03em; }
-.sheet .side { writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.15em; font-weight: 700; padding: 4px 0; }
+.sheet .side { font-weight: 700; line-height: 1.5; padding: 4px 0; }
 .sheet th.s { color: var(--form-supplier); background: var(--form-supplier-bg); }
 .sheet th.b { color: var(--form-buyer); background: var(--form-buyer-bg); }
 .sheet th.k { color: var(--form-broker); background: var(--form-broker-bg); }
@@ -205,7 +205,8 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
   .entry { max-width: none; break-after: page; }
   .entry:last-child { break-after: auto; }
   .fit { overflow: visible; }
-  .sheet { zoom: 1; margin: 0 auto; break-inside: avoid; }
+  .sheet { zoom: 1; width: 100%; margin: 0 auto; break-inside: avoid; }
+  .foot { display: none; }
 }
 </style>
 </head>
@@ -394,10 +395,10 @@ function partyRows(sup, buy) {
   const bEmails = buy.emails.filter(Boolean);
   return `
   <tr>
-    <th class="side s" rowspan="6">공급자</th>
+    <th class="side s" rowspan="6">공<br>급<br>자</th>
     <th class="s">등록<br>번호</th>${cell(regNo(sup), 'ctr big')}
     <th class="s tight">종사업장<br>번호</th>${cell(sup.branch, 'ctr')}
-    <th class="side b split" rowspan="6">공급받는자</th>
+    <th class="side b split" rowspan="6">공<br>급<br>받<br>는<br>자</th>
     <th class="b">등록<br>번호</th>${cell(regNo(buy), 'ctr big')}
     <th class="b tight">종사업장<br>번호</th>${cell(buy.branch, 'ctr')}
   </tr>
@@ -557,7 +558,7 @@ function refresh() {
 function fitAll() {
   for (const fit of sheetsEl.querySelectorAll('.fit')) {
     const sheet = fit.firstElementChild;
-    const scale = Math.min(1, fit.clientWidth / 684);
+    const scale = Math.min(1.35, fit.clientWidth / 684);
     sheet.style.setProperty('--fit', scale.toFixed(4));
   }
 }
