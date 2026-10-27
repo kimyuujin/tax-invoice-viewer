@@ -155,7 +155,7 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
 .sheet table + table { border-top: 2px solid var(--form-frame); }
 .sheet td, .sheet th {
   border: 1px solid var(--form-line);
-  padding: 3px 5px;
+  padding: 3px;
   height: 26px;
   vertical-align: middle;
   overflow-wrap: anywhere;
@@ -180,6 +180,7 @@ body.has-sheets .drop strong { font-size: var(--text-md); }
 .sheet .claim { text-align: center; font-size: 13px; }
 .sheet .claim b { padding: 0 0.6em; }
 .sheet .multiline { white-space: pre-line; }
+.sheet .nw { white-space: nowrap; }
 .foot {
   border-top: 2px solid var(--form-frame);
   padding: 5px 8px;
@@ -403,9 +404,9 @@ function partyRows(sup, buy) {
     <th class="b tight">종사업장<br>번호</th>${cell(buy.branch, 'ctr')}
   </tr>
   <tr>
-    <th class="s">상호<br>(법인명)</th>${cell(sup.name)}
+    <th class="s">상호<br><span class="nw">(법인명)</span></th>${cell(sup.name)}
     <th class="s">성명</th>${cell(sup.ceo)}
-    <th class="b">상호<br>(법인명)</th>${cell(buy.name)}
+    <th class="b">상호<br><span class="nw">(법인명)</span></th>${cell(buy.name)}
     <th class="b">성명</th>${cell(buy.ceo)}
   </tr>
   <tr>
